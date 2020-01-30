@@ -1,0 +1,13 @@
+{
+  "title": "Material demo",
+  "devDependencies": {
+    "react-scripts": "latest"
+  },
+  "description": "https://github.com/mui-org/material-ui/blob/master/docs/src/pages/components/tables/MaterialTableDemo.js",
+  "dependencies": {
+    "@material-ui/core": "4.9.0",
+    "material-table": "latest",
+    "react": "latest",
+    "react-dom": "latest"
+  }
+}
