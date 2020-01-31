@@ -1,23 +1,23 @@
-import React, { Component } from "react";
+import React, { PureComponent } from "react";
 import MaterialTable from "material-table";
 import axios from 'axios'
-import { Grid, Paper, InputLabel, MenuItem, FormControl, Select } from '@material-ui/core';
+import { Grid, InputLabel, MenuItem, FormControl, Select } from '@material-ui/core';
 
 
-class ApiTable extends React.PureComponent {
+class ApiTable extends PureComponent {
   state = {
     datas: {},
     id: 0,
     newData: {},
     data: [],
-    selectedState:'pb'
+    selectedState: 'pb'
   }
 
   componentDidMount() {
-    const { saveData } = this;
+    // const { saveData } = this;
     axios
       .post(`${document.location.origin}/localization/messages/v1/_search?module=rainmaker-pgr,rainmaker-pt,rainmaker-tl,finance-erp,rainmaker-common,rainmaker-hr,rainmaker-uc,rainmaker-noc,rainmaker-abg,rainmaker-test&locale=en_IN&tenantId=${this.state.selectedState}`).then(response => {
-        console.log(response);
+    
 
         // saveData(response.data.messages);
         this.setState({ ...this.state, data: response.data.messages })
@@ -66,7 +66,7 @@ class ApiTable extends React.PureComponent {
         })
       })
       .catch(err => console.log(err));
-      // window.location.reload();
+    // window.location.reload();
   }
 
 
@@ -107,7 +107,7 @@ class ApiTable extends React.PureComponent {
         })
       })
       .catch(err => console.log(err));
-      // window.location.reload();
+    // window.location.reload();
   }
 
 
@@ -149,52 +149,81 @@ class ApiTable extends React.PureComponent {
       })
       .catch(err => console.log(err));
   }
-  
-  handleChange(value) {
+
+  handleChange =(value) => {
     console.log(value);
     this.setState({ selectedState: value });
   }
 
   render() {
-    console.log(this.state);
     const { data = [] } = this.state;
     localStorage.setItem("auth", "ccbedced-1822-4e20-bf62-54b1f86e1208");
     let empty = [];
-    let dropData=[];
-    let datas=[];
-   dropData = data !=[] ? (data.map((da, key) => {
+    let dropData = [];
+    let datas = [];
+    let locale =[];
+    dropData = data !== [] ? (data.map((da, key) => {
       return (
         empty.push(da.module)
       )
-    })):[];
+    })) : [];
 
-    let looks={};    
-    var unique = empty.filter((v, i, a) => a.indexOf(v) === i);    
-     datas=unique.map((u,i)=>{
-      return looks[u]=u
+
+    dropData = data !== [] ? (data.map((da, key) => {
+      return (
+        locale.push(da.locale)
+      )
+    })) : [];
+
+
+    let looks = {};
+    var unique = empty.filter((v, i, a) => a.indexOf(v) === i);
+    datas = unique.map((u, i) => {
+      return looks[u] = u
     })
-console.log("looks:",looks);
-    const keys=unique.map((u,k)=>k);
-    console.log("keys:",keys);        
+
+    let locales = {};
+    var localeunique = locale.filter((v, i, a) => a.indexOf(v) === i);
+    datas = localeunique.map((u, i) => {
+      return locales[u] = u
+    })
+
+
     const columns = [
       { title: "Code", field: "code" },
       { title: "Message", field: "message" },
-      {
-        title: "Module",
-        field: "module",
-        lookup: {'rainmaker-abg': "rainmaker-abg", 'rainmaker-common': "rainmaker-common" },
-        lookup: looks
-      },
-      { title: "Locale", field: "locale" }
+      { title: "Module", field: "module", lookup: looks},
+      { title: "Locale", field: "locale", lookup: locales }
     ];
 
     return (
       <>
 
+        <FormControl >
+          <InputLabel >Localization</InputLabel>
+          <Select
+            open={this.state.open}
+            onClose={this.handleClose}
+            onOpen={this.handleOpen}
+            value={this.state.selectedState}
+            onChange={this.handleChange}
+          
+          >
+            <MenuItem value={'pb'}>pb</MenuItem>
+            <MenuItem value={'uk'}>uk</MenuItem>
+          </Select>
+        </FormControl>
+
+
         <Grid container justify="center" alignItems="center">
           <Grid item md={8}>
             <MaterialTable
               title="Api data"
+              options={{
+                filtering: true,
+                sorting: true,
+                search:true
+              }}
               editable={{
                 onRowAdd: newData =>
                   new Promise(resolve => {
