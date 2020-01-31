@@ -1,7 +1,10 @@
 import React, { PureComponent } from "react";
 import MaterialTable from "material-table";
 import axios from 'axios'
-import { Grid, InputLabel, MenuItem, FormControl, Select } from '@material-ui/core';
+import { Grid, InputLabel, MenuItem, FormControl, Select, Card, Button,Input } from '@material-ui/core';
+
+
+
 
 
 class ApiTable extends PureComponent {
@@ -10,14 +13,18 @@ class ApiTable extends PureComponent {
     id: 0,
     newData: {},
     data: [],
-    selectedState: 'pb'
+    selectedState: 'pb',
+    name: [],
+    multiSelect:[],
+
+    newSearch:[]
   }
 
   componentDidMount() {
     // const { saveData } = this;
     axios
       .post(`${document.location.origin}/localization/messages/v1/_search?module=rainmaker-pgr,rainmaker-pt,rainmaker-tl,finance-erp,rainmaker-common,rainmaker-hr,rainmaker-uc,rainmaker-noc,rainmaker-abg,rainmaker-test&locale=en_IN&tenantId=${this.state.selectedState}`).then(response => {
-    
+
 
         // saveData(response.data.messages);
         this.setState({ ...this.state, data: response.data.messages })
@@ -150,79 +157,192 @@ class ApiTable extends PureComponent {
       .catch(err => console.log(err));
   }
 
-  handleChange =(value) => {
-    console.log(value);
-    this.setState({ selectedState: value });
-  }
+ onSearch = () =>{
+  axios
+      .post(`${document.location.origin}/localization/messages/v1/_search?module=${this.state.multiSelect.join(',')}&locale=en_IN&tenantId=${this.state.selectedState}`).then(response => {
+
+
+        // saveData(response.data.messages);
+        this.setState({ ...this.state, newSearch: response.data.messages })
+      })
+      .catch(err => console.log(err));
+    }
+
+
+  // handleChange = (value) => {
+  //   console.log(value);
+  //   this.setState({ selectedState: value });
+  // }
+  
+  
+
+
+  handleChange = event => {
+    console.log(event.target.value,"event");
+    
+    this.setState({ multiSelect: event.target.value });
+  };
+
+  handleChangeMultiple = event => {
+    const { options } = event.target;
+    const value = [];
+    for (let i = 0, l = options.length; i < l; i += 1) {
+      if (options[i].selected) {
+        value.push(options[i].value);
+      }
+    }
+    this.setState({
+      multiSelect: value
+    });
+  };
 
   render() {
-    const { data = [] } = this.state;
-    localStorage.setItem("auth", "ccbedced-1822-4e20-bf62-54b1f86e1208");
+    const { data = [],newSearch=[] } = this.state;
+    localStorage.setItem("auth", "00167ae7-31af-40ec-b707-e042606c7c25");
     let empty = [];
     let dropData = [];
     let datas = [];
-    let locale =[];
+    let locale = [];
+    let filterModule =[];
     dropData = data !== [] ? (data.map((da, key) => {
       return (
         empty.push(da.module)
       )
     })) : [];
 
-
+    
     dropData = data !== [] ? (data.map((da, key) => {
       return (
         locale.push(da.locale)
       )
     })) : [];
 
-
     let looks = {};
     var unique = empty.filter((v, i, a) => a.indexOf(v) === i);
     datas = unique.map((u, i) => {
       return looks[u] = u
     })
-
+  
     let locales = {};
     var localeunique = locale.filter((v, i, a) => a.indexOf(v) === i);
     datas = localeunique.map((u, i) => {
       return locales[u] = u
     })
+    
 
+    dropData = newSearch !== [] ? (newSearch.map((da, key) => {
+      return (
+        filterModule.push(da.module)
+      )
+    })) : [];
+
+    console.log(filterModule,"filtermodule");
+
+    let filtermoduleUnique = {};
+    var filterMooduleuniqueSearch = filterModule.filter((v, i, a) => a.indexOf(v) === i);
+    datas = filterMooduleuniqueSearch.map((u, i) => {
+      return filtermoduleUnique[u] = u
+    })
+
+    console.log(filtermoduleUnique,"filtermodule");
+    
+
+   
+
+
+
+    console.log(this.state.multiSelect,"localess") 
 
     const columns = [
       { title: "Code", field: "code" },
       { title: "Message", field: "message" },
-      { title: "Module", field: "module", lookup: looks},
+      { title: "Module", field: "module", lookup: filtermoduleUnique },
       { title: "Locale", field: "locale", lookup: locales }
     ];
 
     return (
       <>
 
-        <FormControl >
-          <InputLabel >Localization</InputLabel>
+        <Card style={{marginBottom:'5rem'}}>
+
+          <Grid container style={{margin:'2rem'}}>
+            <Grid item md={3} >
+
+              <FormControl >
+                <InputLabel >Tenant Id</InputLabel>
+                <Select
+                  open={this.state.open}
+                  onClose={this.handleClose}
+                  onOpen={this.handleOpen}
+                  value={this.state.selectedState}
+                  onChange={this.handleChange}
+                >
+                  <MenuItem value={'pb'}>pb</MenuItem>
+
+                </Select>
+              </FormControl>
+
+            </Grid>
+
+
+            <Grid item md={3} >
+            <FormControl>
+          <InputLabel htmlFor="select-multiple">Module</InputLabel>
           <Select
-            open={this.state.open}
-            onClose={this.handleClose}
-            onOpen={this.handleOpen}
-            value={this.state.selectedState}
+            multiple
+            value={this.state.multiSelect}
             onChange={this.handleChange}
-          
+            id="multiSelect"
+            input={<Input id="select-multiple" />}
           >
-            <MenuItem value={'pb'}>pb</MenuItem>
-            <MenuItem value={'uk'}>uk</MenuItem>
+            {unique.map(name => (
+              <MenuItem key={name} value={name}>
+                {name}
+              </MenuItem>
+            ))}
           </Select>
         </FormControl>
+
+            </Grid>
+            <Grid item md={3} >
+              <FormControl >
+                <InputLabel >Locale</InputLabel>
+                <Select
+                  open={this.state.open}
+                  onClose={this.handleClose}
+                  onOpen={this.handleOpen}
+                  value={this.state.selectedState}
+                  onChange={this.handleChange}
+
+                >
+                   {localeunique.map(name => (
+              <MenuItem key={name} value={name}>
+                {name}
+              </MenuItem>
+            ))}
+
+                </Select>
+              </FormControl>
+            </Grid>
+
+            <Grid item md={3} >
+            <Button variant="contained" color="secondary" onClick={this.onSearch}>
+       search
+      </Button>
+            </Grid>
+
+          </Grid>
+        </Card>
 
 
         <Grid container justify="center" alignItems="center">
           <Grid item md={8}>
             <MaterialTable
-              title="Api data"
+              title="Localization data"
               options={{
                 filtering: true,
                 sorting: true,
-                search:true
+                search: true
               }}
               editable={{
                 onRowAdd: newData =>
@@ -268,7 +388,7 @@ class ApiTable extends PureComponent {
                   })
               }}
               columns={columns}
-              data={data}
+              data={newSearch}
             />
           </Grid>
         </Grid>
