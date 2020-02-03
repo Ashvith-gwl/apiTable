@@ -276,16 +276,22 @@ class ApiTable extends PureComponent {
     return (
       < >
         <Grid container justify="center" alignItems="center">
-          <Typography variant="h4">
+        <Grid item md={11} sm={11} xs={11}>
+          <Typography variant="h4" style={{ margin: '1em 0em' }}>
             Localization
-</Typography>
+          </Typography>
+         </Grid>
         </Grid>
         <Grid container justify="center" alignItems="center">
-          <Grid item md={10}>
+          <Grid item md={11} sm={11} xs={11}>
             <Card style={{ marginBottom: '2rem' }}>
 
+            <Typography variant="h5" style={{ margin: '1em' }}>
+            Search for Localization
+          </Typography>
+
               <Grid container style={{ margin: '2rem' }}>
-                <Grid item md={4} >
+                <Grid item md={4} sm={10} xs={10}>
 
                   <FormControl style={{ width: '70%' }}>
                     <InputLabel >Tenant Id</InputLabel>
@@ -304,7 +310,7 @@ class ApiTable extends PureComponent {
                 </Grid>
 
 
-                <Grid item md={4} >
+                <Grid item md={4} sm={10} xs={10}>
                   <FormControl style={{ width: '70%' }} >
                     <InputLabel htmlFor="select-multiple">Module</InputLabel>
                     <Select
@@ -333,14 +339,14 @@ class ApiTable extends PureComponent {
                   </FormControl>
 
                 </Grid>
-                <Grid item md={4} >
+                <Grid item md={4} sm={10} xs={10}>
                   <FormControl style={{ width: '70%' }}>
                     <InputLabel >Locale</InputLabel>
                     <Select
                       open={this.state.open}
                       onClose={this.handleClose}
                       onOpen={this.handleOpen}
-                      value={this.state.selectedState}
+                      value={this.state.locale}
                       onChange={this.handleChangeLocale}
 
                     >
@@ -354,11 +360,11 @@ class ApiTable extends PureComponent {
                   </FormControl>
                 </Grid>
 
-                <Grid item md={6}>
+                <Grid item md={6} sm={12} xs={12}>
                   <Button variant="contained" style={{ width: '60%', marginTop: '2rem', background: '#fff', color: '#333' }} color="secondary" onClick={this.onReset}> reset</Button>
                 </Grid>
 
-                <Grid item md={6}>
+                <Grid item md={6} sm={12} xs={12}>
                   <Button variant="contained" style={{ width: '60%', marginTop: '2rem', background: '#666666', color: '#fff' }} color="secondary" onClick={this.onSearch} disabled={!enabled}> search</Button>
                 </Grid>
 
@@ -369,14 +375,15 @@ class ApiTable extends PureComponent {
 
 
         <Grid container justify="center" alignItems="center">
-          <Grid item md={10}>
+          <Grid item md={11} sm={11} xs={11}>
             <MaterialTable
-              title="Localization data"
+              title={`Localization Search Results ( ${newSearch.length } )`}
               options={{
                 filtering: true,
                 sorting: true,
                 search: true,
-                exportButton: true
+                // exportButton: true,
+                actionsColumnIndex: -1
               }}
               editable={{
                 onRowAdd: newData =>
