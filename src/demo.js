@@ -2,7 +2,7 @@ import React, { PureComponent } from "react";
 // import './Demo.css';
 import MaterialTable from "material-table";
 import axios from 'axios'
-import { Grid, InputLabel, MenuItem, FormControl, Select, Card, Button, Input, ListItemText, Checkbox, Typography } from '@material-ui/core';
+import { Grid, InputLabel, MenuItem, FormControl, Select, Card, Button, Input, ListItemText, Checkbox, Typography,Hidden } from '@material-ui/core';
 
 
 class ApiTable extends PureComponent {
@@ -79,6 +79,7 @@ class ApiTable extends PureComponent {
 
   onUpdate = (id) => {
     const { datas } = this.state;
+    const { onSearch } = this;
     axios
       .post(`${document.location.origin}/localization/messages/v1/_update`,
         {
@@ -115,6 +116,7 @@ class ApiTable extends PureComponent {
       })
       .catch(err => console.log(err));
     // window.location.reload();
+    onSearch();
   }
 
 
@@ -161,8 +163,6 @@ class ApiTable extends PureComponent {
     axios
       .post(`${document.location.origin}/localization/messages/v1/_search?module=${this.state.multiSelect.join(',')}&locale=en_IN&tenantId=${this.state.selectedState}`).then(response => {
 
-
-        // saveData(response.data.messages);
         this.setState({ ...this.state, newSearch: response.data.messages })
       })
       .catch(err => console.log(err));
@@ -210,7 +210,6 @@ class ApiTable extends PureComponent {
   };
 
   render() {
-    console.log('multiSelect', this.state.multiSelect)
 
     const { data = [], newSearch = [] } = this.state;
     localStorage.setItem("auth", "00167ae7-31af-40ec-b707-e042606c7c25");
@@ -219,14 +218,17 @@ class ApiTable extends PureComponent {
     let datas = [];
     let locale = [];
     let filterModule = [];
-    dropData = data !== [] ? (data.map((da, key) => {
+    let filterLocale = [];
+  
+
+    dropData = data != [] ? ( data.map((da, key) => {
       return (
         empty.push(da.module)
       )
     })) : [];
 
 
-    dropData = data !== [] ? (data.map((da, key) => {
+    dropData = data != [] ? (data.map((da, key) => {
       return (
         locale.push(da.locale)
       )
@@ -251,7 +253,6 @@ class ApiTable extends PureComponent {
       )
     })) : [];
 
-    console.log(empty, "unique");
 
     let filtermoduleUnique = {};
     var filterMooduleuniqueSearch = filterModule.filter((v, i, a) => a.indexOf(v) === i);
@@ -259,15 +260,25 @@ class ApiTable extends PureComponent {
       return filtermoduleUnique[u] = u
     })
 
-    console.log(filtermoduleUnique, "filtermodule");
 
-    console.log(this.state.multiSelect, "localess")
+    dropData = newSearch !== [] ? (newSearch.map((da, key) => {
+      return (
+        filterLocale.push(da.locale)
+      )
+    })) : [];
+
+    let filterLocaleUnique = {};
+    var filterLocaleuniqueSearch = filterLocale.filter((v, i, a) => a.indexOf(v) === i);
+    datas = filterLocaleuniqueSearch.map((u, i) => {
+      return filterLocaleUnique[u] = u
+    })
+
 
     const columns = [
       { title: "Code", field: "code" },
       { title: "Message", field: "message" },
       { title: "Module", field: "module", lookup: filtermoduleUnique },
-      { title: "Locale", field: "locale", lookup: locales }
+      { title: "Locale", field: "locale", lookup: filterLocaleUnique }
     ];
 
     const enabled =
@@ -276,22 +287,22 @@ class ApiTable extends PureComponent {
     return (
       < >
         <Grid container justify="center" alignItems="center">
-        <Grid item md={11} sm={11} xs={11}>
-          <Typography variant="h4" style={{ margin: '1em 0em' }}>
-            Localization
+          <Grid item md={11} sm={11} xs={11}>
+            <Typography variant="h4" style={{ margin: '1em 0em' }}>
+              Localization
           </Typography>
-         </Grid>
+          </Grid>
         </Grid>
         <Grid container justify="center" alignItems="center">
           <Grid item md={11} sm={11} xs={11}>
             <Card style={{ marginBottom: '2rem' }}>
 
-            <Typography variant="h5" style={{ margin: '1em' }}>
-            Search for Localization
-          </Typography>
+              <Typography variant="h5" style={{ margin: '1em' }}>
+                Search for Localization
+              </Typography>
 
               <Grid container style={{ margin: '2rem' }}>
-                <Grid item md={4} sm={10} xs={10}>
+                <Grid item md={4} sm={6} xs={10}>
 
                   <FormControl style={{ width: '70%' }}>
                     <InputLabel >Tenant Id</InputLabel>
@@ -310,7 +321,7 @@ class ApiTable extends PureComponent {
                 </Grid>
 
 
-                <Grid item md={4} sm={10} xs={10}>
+                <Grid item md={4} sm={6} xs={10}>
                   <FormControl style={{ width: '70%' }} >
                     <InputLabel htmlFor="select-multiple">Module</InputLabel>
                     <Select
@@ -339,7 +350,7 @@ class ApiTable extends PureComponent {
                   </FormControl>
 
                 </Grid>
-                <Grid item md={4} sm={10} xs={10}>
+                <Grid item md={4} sm={6} xs={10}>
                   <FormControl style={{ width: '70%' }}>
                     <InputLabel >Locale</InputLabel>
                     <Select
@@ -359,12 +370,16 @@ class ApiTable extends PureComponent {
                     </Select>
                   </FormControl>
                 </Grid>
+                
+                <Hidden mdUp>
+                <Grid item md={4} sm={6} xs={10}></Grid>
+                </Hidden>
 
-                <Grid item md={6} sm={12} xs={12}>
+                <Grid item md={6} sm={6} xs={12}>
                   <Button variant="contained" style={{ width: '60%', marginTop: '2rem', background: '#fff', color: '#333' }} color="secondary" onClick={this.onReset}> reset</Button>
                 </Grid>
 
-                <Grid item md={6} sm={12} xs={12}>
+                <Grid item md={6} sm={6} xs={12}>
                   <Button variant="contained" style={{ width: '60%', marginTop: '2rem', background: '#666666', color: '#fff' }} color="secondary" onClick={this.onSearch} disabled={!enabled}> search</Button>
                 </Grid>
 
@@ -377,7 +392,7 @@ class ApiTable extends PureComponent {
         <Grid container justify="center" alignItems="center">
           <Grid item md={11} sm={11} xs={11}>
             <MaterialTable
-              title={`Localization Search Results ( ${newSearch.length } )`}
+              title={`Localization Search Results ( ${newSearch.length} )`}
               options={{
                 filtering: true,
                 sorting: true,
