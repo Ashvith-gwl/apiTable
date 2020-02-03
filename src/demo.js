@@ -1,10 +1,8 @@
 import React, { PureComponent } from "react";
+// import './Demo.css';
 import MaterialTable from "material-table";
 import axios from 'axios'
-import { Grid, InputLabel, MenuItem, FormControl, Select, Card, Button,Input } from '@material-ui/core';
-
-
-
+import { Grid, InputLabel, MenuItem, FormControl, Select, Card, Button, Input, ListItemText, Checkbox, Typography } from '@material-ui/core';
 
 
 class ApiTable extends PureComponent {
@@ -13,11 +11,13 @@ class ApiTable extends PureComponent {
     id: 0,
     newData: {},
     data: [],
+
     selectedState: 'pb',
     name: [],
-    multiSelect:[],
+    multiSelect: [],
+    locale: [],
 
-    newSearch:[]
+    newSearch: []
   }
 
   componentDidMount() {
@@ -157,8 +157,8 @@ class ApiTable extends PureComponent {
       .catch(err => console.log(err));
   }
 
- onSearch = () =>{
-  axios
+  onSearch = () => {
+    axios
       .post(`${document.location.origin}/localization/messages/v1/_search?module=${this.state.multiSelect.join(',')}&locale=en_IN&tenantId=${this.state.selectedState}`).then(response => {
 
 
@@ -166,21 +166,33 @@ class ApiTable extends PureComponent {
         this.setState({ ...this.state, newSearch: response.data.messages })
       })
       .catch(err => console.log(err));
-    }
+  }
+
+  onReset = () => {
+    this.setState({
+      ...this.state,
+      multiSelect: [],
+      selectedState: '',
+      locale: []
+    })
+  }
+
+  handleChange = (event) => {
+    this.setState({ selectedState: event.target.value });
+  }
+
+  handleChangeLocale = (event) => {
+    this.setState({ locale: event.target.value });
+  }
 
 
-  // handleChange = (value) => {
-  //   console.log(value);
-  //   this.setState({ selectedState: value });
-  // }
-  
-  
 
 
-  handleChange = event => {
-    console.log(event.target.value,"event");
-    
+  handleChangeMulti = event => {
+    console.log(event.target.value, "event");
+
     this.setState({ multiSelect: event.target.value });
+    // multiSelect(event.target.value);
   };
 
   handleChangeMultiple = event => {
@@ -191,26 +203,29 @@ class ApiTable extends PureComponent {
         value.push(options[i].value);
       }
     }
+    // multiSelect(value);
     this.setState({
       multiSelect: value
     });
   };
 
   render() {
-    const { data = [],newSearch=[] } = this.state;
+    console.log('multiSelect', this.state.multiSelect)
+
+    const { data = [], newSearch = [] } = this.state;
     localStorage.setItem("auth", "00167ae7-31af-40ec-b707-e042606c7c25");
     let empty = [];
     let dropData = [];
     let datas = [];
     let locale = [];
-    let filterModule =[];
+    let filterModule = [];
     dropData = data !== [] ? (data.map((da, key) => {
       return (
         empty.push(da.module)
       )
     })) : [];
 
-    
+
     dropData = data !== [] ? (data.map((da, key) => {
       return (
         locale.push(da.locale)
@@ -222,13 +237,13 @@ class ApiTable extends PureComponent {
     datas = unique.map((u, i) => {
       return looks[u] = u
     })
-  
+
     let locales = {};
     var localeunique = locale.filter((v, i, a) => a.indexOf(v) === i);
     datas = localeunique.map((u, i) => {
       return locales[u] = u
     })
-    
+
 
     dropData = newSearch !== [] ? (newSearch.map((da, key) => {
       return (
@@ -236,7 +251,7 @@ class ApiTable extends PureComponent {
       )
     })) : [];
 
-    console.log(filterModule,"filtermodule");
+    console.log(empty, "unique");
 
     let filtermoduleUnique = {};
     var filterMooduleuniqueSearch = filterModule.filter((v, i, a) => a.indexOf(v) === i);
@@ -244,14 +259,9 @@ class ApiTable extends PureComponent {
       return filtermoduleUnique[u] = u
     })
 
-    console.log(filtermoduleUnique,"filtermodule");
-    
+    console.log(filtermoduleUnique, "filtermodule");
 
-   
-
-
-
-    console.log(this.state.multiSelect,"localess") 
+    console.log(this.state.multiSelect, "localess")
 
     const columns = [
       { title: "Code", field: "code" },
@@ -260,89 +270,113 @@ class ApiTable extends PureComponent {
       { title: "Locale", field: "locale", lookup: locales }
     ];
 
+    const enabled =
+      this.state.selectedState.length >= 1
+
     return (
-      <>
+      < >
+        <Grid container justify="center" alignItems="center">
+          <Typography variant="h4">
+            Localization
+</Typography>
+        </Grid>
+        <Grid container justify="center" alignItems="center">
+          <Grid item md={10}>
+            <Card style={{ marginBottom: '2rem' }}>
 
-        <Card style={{marginBottom:'5rem'}}>
+              <Grid container style={{ margin: '2rem' }}>
+                <Grid item md={4} >
 
-          <Grid container style={{margin:'2rem'}}>
-            <Grid item md={3} >
+                  <FormControl style={{ width: '70%' }}>
+                    <InputLabel >Tenant Id</InputLabel>
+                    <Select
+                      open={this.state.open}
+                      onClose={this.handleClose}
+                      onOpen={this.handleOpen}
+                      value={this.state.selectedState}
+                      onChange={this.handleChange}
+                    >
+                      <MenuItem value={'pb'}>pb</MenuItem>
 
-              <FormControl >
-                <InputLabel >Tenant Id</InputLabel>
-                <Select
-                  open={this.state.open}
-                  onClose={this.handleClose}
-                  onOpen={this.handleOpen}
-                  value={this.state.selectedState}
-                  onChange={this.handleChange}
-                >
-                  <MenuItem value={'pb'}>pb</MenuItem>
+                    </Select>
+                  </FormControl>
 
-                </Select>
-              </FormControl>
-
-            </Grid>
+                </Grid>
 
 
-            <Grid item md={3} >
-            <FormControl>
-          <InputLabel htmlFor="select-multiple">Module</InputLabel>
-          <Select
-            multiple
-            value={this.state.multiSelect}
-            onChange={this.handleChange}
-            id="multiSelect"
-            input={<Input id="select-multiple" />}
-          >
-            {unique.map(name => (
-              <MenuItem key={name} value={name}>
-                {name}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+                <Grid item md={4} >
+                  <FormControl style={{ width: '70%' }} >
+                    <InputLabel htmlFor="select-multiple">Module</InputLabel>
+                    <Select
+                      multiple
+                      value={this.state.multiSelect}
+                      onChange={this.handleChangeMulti}
+                      id="multiSelect"
+                      // input={<Input id="select-multiple" />}
 
-            </Grid>
-            <Grid item md={3} >
-              <FormControl >
-                <InputLabel >Locale</InputLabel>
-                <Select
-                  open={this.state.open}
-                  onClose={this.handleClose}
-                  onOpen={this.handleOpen}
-                  value={this.state.selectedState}
-                  onChange={this.handleChange}
+                      input={<Input />}
+                      renderValue={selected => selected.join(", ")}
+                    // MenuProps={MenuProps}
+                    >
+                      {unique.map(name => (
+                        // <MenuItem key={name} value={name}>
+                        //   {name}
+                        // </MenuItem>
 
-                >
-                   {localeunique.map(name => (
-              <MenuItem key={name} value={name}>
-                {name}
-              </MenuItem>
-            ))}
+                        <MenuItem key={name} value={name}>
+                          <Checkbox checked={this.state.multiSelect.indexOf(name) > -1} />
+                          <ListItemText primary={name} />
+                        </MenuItem>
 
-                </Select>
-              </FormControl>
-            </Grid>
+                      ))}
+                    </Select>
+                  </FormControl>
 
-            <Grid item md={3} >
-            <Button variant="contained" color="secondary" onClick={this.onSearch}>
-       search
-      </Button>
-            </Grid>
+                </Grid>
+                <Grid item md={4} >
+                  <FormControl style={{ width: '70%' }}>
+                    <InputLabel >Locale</InputLabel>
+                    <Select
+                      open={this.state.open}
+                      onClose={this.handleClose}
+                      onOpen={this.handleOpen}
+                      value={this.state.selectedState}
+                      onChange={this.handleChangeLocale}
 
+                    >
+                      {localeunique.map(name => (
+                        <MenuItem key={name} value={name}>
+                          {name}
+                        </MenuItem>
+                      ))}
+
+                    </Select>
+                  </FormControl>
+                </Grid>
+
+                <Grid item md={6}>
+                  <Button variant="contained" style={{ width: '60%', marginTop: '2rem', background: '#fff', color: '#333' }} color="secondary" onClick={this.onReset}> reset</Button>
+                </Grid>
+
+                <Grid item md={6}>
+                  <Button variant="contained" style={{ width: '60%', marginTop: '2rem', background: '#666666', color: '#fff' }} color="secondary" onClick={this.onSearch} disabled={!enabled}> search</Button>
+                </Grid>
+
+              </Grid>
+            </Card>
           </Grid>
-        </Card>
+        </Grid>
 
 
         <Grid container justify="center" alignItems="center">
-          <Grid item md={8}>
+          <Grid item md={10}>
             <MaterialTable
               title="Localization data"
               options={{
                 filtering: true,
                 sorting: true,
-                search: true
+                search: true,
+                exportButton: true
               }}
               editable={{
                 onRowAdd: newData =>
