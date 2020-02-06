@@ -1,8 +1,7 @@
 import React, { PureComponent } from "react";
-// import './Demo.css';
 import MaterialTable from "material-table";
 import axios from 'axios'
-import { Grid, InputLabel, MenuItem, FormControl, Select, Card, Button, Input, ListItemText, Checkbox, Typography,Hidden } from '@material-ui/core';
+import { Grid, InputLabel, MenuItem, FormControl, Select, Card, Button, Input, ListItemText, Checkbox, Typography, Hidden } from '@material-ui/core';
 
 
 class ApiTable extends PureComponent {
@@ -12,24 +11,83 @@ class ApiTable extends PureComponent {
     newData: {},
     data: [],
 
-    selectedState: 'pb',
+    selectedState: '',
     name: [],
     multiSelect: [],
     locale: [],
 
-    newSearch: []
+    newSearch: [],
+
+    apidata: [],
+    statelocale:[],
+    statemultiSelect:[]
   }
 
   componentDidMount() {
-    // const { saveData } = this;
-    axios
-      .post(`${document.location.origin}/localization/messages/v1/_search?module=rainmaker-pgr,rainmaker-pt,rainmaker-tl,finance-erp,rainmaker-common,rainmaker-hr,rainmaker-uc,rainmaker-noc,rainmaker-abg,rainmaker-test&locale=en_IN&tenantId=${this.state.selectedState}`).then(response => {
+// var c = new URL(window.location.href).searchParams.get("module");
+var mod= new URL(window.location.href).searchParams.get("module");
+var module=mod?mod.split(','):[];
+var loc= new URL(window.location.href).searchParams.get("locale");
+var locale= loc?loc.split(','):[];
+console.log(module,"module")
+    
+console.log(this.state,"state")
+    if (locale.length >= 1 && module.length >= 1) {
+      var statemultiSelect=[];
+      statemultiSelect=module.map(m=>{return{"label":m, "value":m}})
+    
 
 
-        // saveData(response.data.messages);
-        this.setState({ ...this.state, data: response.data.messages })
+      console.log("not axios");
+      this.setState({ ...this.state,
+        statemultiSelect,
+        selectedState: new URL(window.location.href).searchParams.get("tenantID"),
+        multiSelect: module,
+        statelocale:locale.map(m=>{return{"label":m, "value":m}}),
+        locale:locale
       })
-      .catch(err => console.log(err));
+
+    } else {
+      console.log("axios");
+      
+      axios
+        .post(`${document.location.origin}/egov-mdms-service/v1/_search?tenantId=${this.state.selectedState}`,
+          {
+            "RequestInfo": {
+              "apiId": "Rainmaker",
+              "ver": ".01",
+              "ts": "",
+              "action": "_search",
+              "did": "1",
+              "key": "",
+              "msgId": "20170310130900|en_IN",
+              "authToken": "a969d202-0b39-4fb2-8334-2f0c4d281bf6"
+            },
+            "MdmsCriteria": {
+              "tenantId": "uk",
+              "moduleDetails": [
+                {
+                  "moduleName": "common-masters",
+                  "masterDetails": [
+
+                    {
+                      "name": "StateInfo"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ).then(response => {
+          this.setState({ ...this.state, apidata: response.data.MdmsRes["common-masters"],
+          selectedState: new URL(window.location.href).searchParams.get("tenantID"),
+          statelocale:response.data.MdmsRes["common-masters"].StateInfo[0].languages,
+          statemultiSelect:response.data.MdmsRes["common-masters"].StateInfo[0].localizationModules
+        })
+        })
+        .catch(err => console.log(err));
+
+    }
   }
 
   // saveData = data => {
@@ -38,6 +96,7 @@ class ApiTable extends PureComponent {
 
   onCreate = () => {
     const { newData } = this.state;
+    const { onSearch } = this;
     axios
       .post(`${document.location.origin}/localization/messages/v1/_create`,
         {
@@ -74,6 +133,7 @@ class ApiTable extends PureComponent {
       })
       .catch(err => console.log(err));
     // window.location.reload();
+    onSearch();
   }
 
 
@@ -161,7 +221,7 @@ class ApiTable extends PureComponent {
 
   onSearch = () => {
     axios
-      .post(`${document.location.origin}/localization/messages/v1/_search?module=${this.state.multiSelect.join(',')}&locale=en_IN&tenantId=${this.state.selectedState}`).then(response => {
+      .post(`${document.location.origin}/localization/messages/v1/_search?module=${this.state.multiSelect.join(',')}&locale=${this.state.locale}&tenantId=${this.state.selectedState}`).then(response => {
 
         this.setState({ ...this.state, newSearch: response.data.messages })
       })
@@ -172,7 +232,6 @@ class ApiTable extends PureComponent {
     this.setState({
       ...this.state,
       multiSelect: [],
-      selectedState: '',
       locale: []
     })
   }
@@ -211,17 +270,17 @@ class ApiTable extends PureComponent {
 
   render() {
 
-    const { data = [], newSearch = [] } = this.state;
-    localStorage.setItem("auth", "00167ae7-31af-40ec-b707-e042606c7c25");
+    const { data = [], newSearch = [], apidata = [] } = this.state;
+    localStorage.setItem("auth", "024494f4-239a-41e8-a3c0-0fa4d804a2c8");
     let empty = [];
     let dropData = [];
     let datas = [];
     let locale = [];
     let filterModule = [];
     let filterLocale = [];
-  
 
-    dropData = data != [] ? ( data.map((da, key) => {
+
+    dropData = data != [] ? (data.map((da, key) => {
       return (
         empty.push(da.module)
       )
@@ -281,8 +340,17 @@ class ApiTable extends PureComponent {
       { title: "Locale", field: "locale", lookup: filterLocaleUnique }
     ];
 
+
+    const localeApi = this.state.apidata.StateInfo && this.state.apidata.StateInfo.length >= 1 ? this.state.apidata.StateInfo[0].languages : [];
+
+    const ModuleApi = this.state.apidata.StateInfo && this.state.apidata.StateInfo.length >= 1 ? this.state.apidata.StateInfo[0].localizationModules : [];
+    
+
     const enabled =
-      this.state.selectedState.length >= 1
+      this.state.locale.length >= 1
+
+      console.log(this.state);
+      
 
     return (
       < >
@@ -312,8 +380,9 @@ class ApiTable extends PureComponent {
                       onOpen={this.handleOpen}
                       value={this.state.selectedState}
                       onChange={this.handleChange}
+                      disabled
                     >
-                      <MenuItem value={'pb'}>pb</MenuItem>
+                      <MenuItem value={this.state.selectedState}>{this.state.selectedState}</MenuItem>
 
                     </Select>
                   </FormControl>
@@ -329,28 +398,22 @@ class ApiTable extends PureComponent {
                       value={this.state.multiSelect}
                       onChange={this.handleChangeMulti}
                       id="multiSelect"
-                      // input={<Input id="select-multiple" />}
-
                       input={<Input />}
                       renderValue={selected => selected.join(", ")}
-                    // MenuProps={MenuProps}
                     >
-                      {unique.map(name => (
-                        // <MenuItem key={name} value={name}>
-                        //   {name}
-                        // </MenuItem>
-
-                        <MenuItem key={name} value={name}>
-                          <Checkbox checked={this.state.multiSelect.indexOf(name) > -1} />
-                          <ListItemText primary={name} />
+                      {this.state.statemultiSelect.map(name => (
+                        <MenuItem key={name.value} value={name.value}>
+                          <Checkbox checked={this.state.multiSelect.indexOf(name.label) > -1} />
+                          <ListItemText primary={name.label} />
                         </MenuItem>
 
                       ))}
                     </Select>
                   </FormControl>
-
                 </Grid>
+
                 <Grid item md={4} sm={6} xs={10}>
+
                   <FormControl style={{ width: '70%' }}>
                     <InputLabel >Locale</InputLabel>
                     <Select
@@ -359,20 +422,20 @@ class ApiTable extends PureComponent {
                       onOpen={this.handleOpen}
                       value={this.state.locale}
                       onChange={this.handleChangeLocale}
-
                     >
-                      {localeunique.map(name => (
-                        <MenuItem key={name} value={name}>
-                          {name}
+                      {this.state.statelocale.map(name => (
+                        <MenuItem key={name.value} value={name.value}>
+                          {name.label}
                         </MenuItem>
                       ))}
-
                     </Select>
                   </FormControl>
+                  
+
                 </Grid>
-                
+
                 <Hidden mdUp>
-                <Grid item md={4} sm={6} xs={10}></Grid>
+                  <Grid item md={4} sm={6} xs={10}></Grid>
                 </Hidden>
 
                 <Grid item md={6} sm={6} xs={12}>
@@ -398,7 +461,11 @@ class ApiTable extends PureComponent {
                 sorting: true,
                 search: true,
                 // exportButton: true,
-                actionsColumnIndex: -1
+                actionsColumnIndex: -1,
+                pageSize: 10,
+                pageSizeOptions: [5, 10, 25, 50, 75, 100],
+                addRowPosition: 'first',
+                exportButton: true, exportAllData: true
               }}
               editable={{
                 onRowAdd: newData =>
