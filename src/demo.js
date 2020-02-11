@@ -1,15 +1,19 @@
 import React, { PureComponent } from "react";
 import MaterialTable from "material-table";
 import axios from 'axios'
-import { Grid, InputLabel, MenuItem, FormControl, Select, Card, Button, Input, ListItemText, Checkbox, Typography, Hidden } from '@material-ui/core';
+import * as XLSX from 'xlsx';
+import { SheetJSFT } from './types';
+import { make_cols } from './MakeColumns';
+import { Grid, InputLabel, MenuItem, FormControl, Select, Card, Button, Input, ListItemText, Checkbox, Typography, Hidden, Fab } from '@material-ui/core';
 
+import AddIcon from '@material-ui/icons/Add';
 
 class ApiTable extends PureComponent {
   state = {
     datas: {},
     id: 0,
     newData: {},
-    data: [],
+    // data: [],
 
     selectedState: '',
     name: [],
@@ -19,37 +23,44 @@ class ApiTable extends PureComponent {
     newSearch: [],
 
     apidata: [],
-    statelocale:[],
-    statemultiSelect:[]
+    statelocale: [],
+    statemultiSelect: [],
+
+    file: {},
+    data: [],
+    cols: [],
+    validate: '',
+    matchData:[]
   }
 
   componentDidMount() {
-// var c = new URL(window.location.href).searchParams.get("module");
-var mod= new URL(window.location.href).searchParams.get("module");
-var module=mod?mod.split(','):[];
-var loc= new URL(window.location.href).searchParams.get("locale");
-var locale= loc?loc.split(','):[];
-console.log(module,"module")
-    
-console.log(this.state,"state")
+    // var c = new URL(window.location.href).searchParams.get("module");
+    var mod = new URL(window.location.href).searchParams.get("module");
+    var module = mod ? mod.split(',') : [];
+    var loc = new URL(window.location.href).searchParams.get("locale");
+    var locale = loc ? loc.split(',') : [];
+    console.log(module, "module")
+
+    console.log(this.state, "state")
     if (locale.length >= 1 && module.length >= 1) {
-      var statemultiSelect=[];
-      statemultiSelect=module.map(m=>{return{"label":m, "value":m}})
-    
+      var statemultiSelect = [];
+      statemultiSelect = module.map(m => { return { "label": m, "value": m } })
+
 
 
       console.log("not axios");
-      this.setState({ ...this.state,
+      this.setState({
+        ...this.state,
         statemultiSelect,
         selectedState: new URL(window.location.href).searchParams.get("tenantID"),
         multiSelect: module,
-        statelocale:locale.map(m=>{return{"label":m, "value":m}}),
-        locale:locale
+        statelocale: locale.map(m => { return { "label": m, "value": m } }),
+        locale: locale
       })
 
     } else {
       console.log("axios");
-      
+
       axios
         .post(`${document.location.origin}/egov-mdms-service/v1/_search?tenantId=${this.state.selectedState}`,
           {
@@ -79,11 +90,12 @@ console.log(this.state,"state")
             }
           }
         ).then(response => {
-          this.setState({ ...this.state, apidata: response.data.MdmsRes["common-masters"],
-          selectedState: new URL(window.location.href).searchParams.get("tenantID"),
-          statelocale:response.data.MdmsRes["common-masters"].StateInfo[0].languages,
-          statemultiSelect:response.data.MdmsRes["common-masters"].StateInfo[0].localizationModules
-        })
+          this.setState({
+            ...this.state, apidata: response.data.MdmsRes["common-masters"],
+            selectedState: new URL(window.location.href).searchParams.get("tenantID"),
+            statelocale: response.data.MdmsRes["common-masters"].StateInfo[0].languages,
+            statemultiSelect: response.data.MdmsRes["common-masters"].StateInfo[0].localizationModules
+          })
         })
         .catch(err => console.log(err));
 
@@ -244,7 +256,17 @@ console.log(this.state,"state")
     this.setState({ locale: event.target.value });
   }
 
+  handleChangeExcel = (e) => {
+    const { handleFile } = this;
+    const files = e.target.files;
+    console.log(files, "files");
+    if (files && files[0]) {
+      this.setState({ file: files[0] }, () => {
+        handleFile();
+      });
+    }
 
+  };
 
 
   handleChangeMulti = event => {
@@ -268,7 +290,82 @@ console.log(this.state,"state")
     });
   };
 
+
+  handleFile = () => {
+    const { handleValidateUpload } = this
+
+    /* Boilerplate to set up FileReader */
+    const reader = new FileReader();
+    const rABS = !!reader.readAsBinaryString;
+
+    reader.onload = (e) => {
+      /* Parse data */
+      const bstr = e.target.result;
+      const wb = XLSX.read(bstr, { type: rABS ? 'binary' : 'array', bookVBA: true });
+      /* Get first worksheet */
+      const wsname = wb.SheetNames[0];
+      const ws = wb.Sheets[wsname];
+      /* Convert array of arrays */
+      const data = XLSX.utils.sheet_to_json(ws);
+      /* Update state */
+      this.setState({ data: data, cols: make_cols(ws['!ref']) }, () => {
+        // console.log(JSON.stringify(this.state.data, null, 2));
+        handleValidateUpload();
+      });
+    };
+    if (rABS) {
+      reader.readAsBinaryString(this.state.file);
+    } else {
+      reader.readAsArrayBuffer(this.state.file);
+    };
+  }
+
+  handleValidateUpload = () => {
+    var TotallenOfObj = this.state.data.reduce((a, obj) => a + Object.keys(obj).length, 0);
+    var lenOfObj = this.state.data.reduce((a, obj) => Object.keys(obj).length, 0);
+    var lenOfArr = this.state.data.length * 4
+    console.log(lenOfObj, "data", TotallenOfObj, lenOfArr);
+    if (TotallenOfObj == lenOfArr && lenOfObj == 4) {
+      console.log("correct data")
+      this.setState({ validate: '' })
+    } else {
+      console.log("Invalid data")
+      this.setState({ validate: 'Please check excel sheet cells' })
+    }
+  }
+
+ 
+
+  cmpreUpload = (searchData,excelData) =>{
+    excelData.map((s1,k1)=>{
+      let matchFound=false;
+      
+        
+      searchData.map((e1,k2)=>{
+          if(s1.Code === e1.code && s1.Module === e1.module && s1.Message === e1.message){
+            matchFound=true;
+          }
+          // } else {
+          //   matchData.push(s1)
+          //   console.log(matchData,"matchData")
+          // }
+        })
+      if(!matchFound){
+        let {matchData=[]}= this.state;
+       matchData.push(s1)
+       this.setState({matchData},console.log("s1",this.state.matchData)
+        )
+      }
+    })
+      
+  }
+
+
+
+
   render() {
+
+    console.log("matchData",this.state.matchData);
 
     const { data = [], newSearch = [], apidata = [] } = this.state;
     localStorage.setItem("auth", "024494f4-239a-41e8-a3c0-0fa4d804a2c8");
@@ -278,33 +375,6 @@ console.log(this.state,"state")
     let locale = [];
     let filterModule = [];
     let filterLocale = [];
-
-
-    dropData = data != [] ? (data.map((da, key) => {
-      return (
-        empty.push(da.module)
-      )
-    })) : [];
-
-
-    dropData = data != [] ? (data.map((da, key) => {
-      return (
-        locale.push(da.locale)
-      )
-    })) : [];
-
-    let looks = {};
-    var unique = empty.filter((v, i, a) => a.indexOf(v) === i);
-    datas = unique.map((u, i) => {
-      return looks[u] = u
-    })
-
-    let locales = {};
-    var localeunique = locale.filter((v, i, a) => a.indexOf(v) === i);
-    datas = localeunique.map((u, i) => {
-      return locales[u] = u
-    })
-
 
     dropData = newSearch !== [] ? (newSearch.map((da, key) => {
       return (
@@ -341,25 +411,53 @@ console.log(this.state,"state")
     ];
 
 
-    const localeApi = this.state.apidata.StateInfo && this.state.apidata.StateInfo.length >= 1 ? this.state.apidata.StateInfo[0].languages : [];
-
-    const ModuleApi = this.state.apidata.StateInfo && this.state.apidata.StateInfo.length >= 1 ? this.state.apidata.StateInfo[0].localizationModules : [];
-    
-
     const enabled =
       this.state.locale.length >= 1
 
-      console.log(this.state);
-      
 
     return (
       < >
+
         <Grid container justify="center" alignItems="center">
-          <Grid item md={11} sm={11} xs={11}>
+          <Grid container item md={5} sm={6} xs={11}>
             <Typography variant="h4" style={{ margin: '1em 0em' }}>
               Localization
           </Typography>
           </Grid>
+
+          <Grid item md={6} sm={6} xs={11} container direction="row" justify="flex-end">
+            <input style={{ display: "none" }}
+              accept="file"
+              id="outlined-button-file"
+              multiple
+              type="file"
+              accept={SheetJSFT}
+              onChange={this.handleChangeExcel}
+            />
+            <label htmlFor="outlined-button-file">
+              <Fab color="primary" size="small" aria-label="Add" component="span" style={{ background: "#fe7a51", color: "#fff" }}>
+                <AddIcon />
+              </Fab>
+            </label>
+            <span style={{ padding: '8px' }}>{this.state.file.name} </span>
+            {/* </Grid> */}
+
+            {/* <Grid item md={4} sm={4} xs={11}> */}
+
+            <Button variant="contained" onClick={()=>this.cmpreUpload(newSearch,data)} style={{ background: "#fe7a51", color: "#fff" }}>
+              Upload
+            </Button>
+            <br />
+            <Grid
+              container
+              direction="row"
+              justify="flex-end"
+              alignItems="center"
+            >
+              <span style={{color:'red'}}>&nbsp;{this.state.validate}</span>
+            </Grid>
+          </Grid>
+
         </Grid>
         <Grid container justify="center" alignItems="center">
           <Grid item md={11} sm={11} xs={11}>
@@ -383,12 +481,10 @@ console.log(this.state,"state")
                       disabled
                     >
                       <MenuItem value={this.state.selectedState}>{this.state.selectedState}</MenuItem>
-
                     </Select>
                   </FormControl>
 
                 </Grid>
-
 
                 <Grid item md={4} sm={6} xs={10}>
                   <FormControl style={{ width: '70%' }} >
@@ -413,7 +509,6 @@ console.log(this.state,"state")
                 </Grid>
 
                 <Grid item md={4} sm={6} xs={10}>
-
                   <FormControl style={{ width: '70%' }}>
                     <InputLabel >Locale</InputLabel>
                     <Select
@@ -430,8 +525,6 @@ console.log(this.state,"state")
                       ))}
                     </Select>
                   </FormControl>
-                  
-
                 </Grid>
 
                 <Hidden mdUp>
